@@ -2,6 +2,9 @@
 
 第六關 - 旅館預約服務
 
+使用[設計稿](https://challenge.thef2e.com/user/1600?schedule=3851)
+
+[預覽網址](https://tianyili.github.io/the-f2e-w6-hotel-booking)
 ## Project setup
 ```
 yarn install

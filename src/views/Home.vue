@@ -14,7 +14,7 @@
       <div class="wrap"
         v-if="!isLoading">
         <div class="white-space-logo"><span>White</span><span>Space</span></div>
-        <div class="room-index">01</div>
+        <div class="room-index">{{roomIndex}}</div>
         <div class="room-name">{{activeItem.name}}</div>
         <div class="social-media">
           <img src="@/assets/facebook-square-brands.svg"
@@ -70,6 +70,9 @@ export default class Home extends Vue {
     holidayPrice: 0,
     name: ''
   }
+  get roomIndex () {
+    return '0' + this.currentRoomIndex
+  }
   async beforeCreate () {
     let data = await getAllRooms()
     if (data instanceof Error) {
@@ -89,6 +92,7 @@ export default class Home extends Vue {
   }
   sideBarOnHover (id: number) {
     let item = this.items[id]
+    this.currentRoomIndex = id + 1
     if (item) {
       this.activeItem = item
     }

@@ -1,5 +1,7 @@
 # the-f2e-w6-hotel-booking
 
+第六關 - 旅館預約服務
+
 ## Project setup
 ```
 yarn install

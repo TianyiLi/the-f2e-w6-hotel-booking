@@ -98,7 +98,7 @@ export default class Home extends Vue {
     }
   }
   sideBarOnClick (id: string) {
-
+    this.$router.push('/about/' + id)
   }
 }
 </script>

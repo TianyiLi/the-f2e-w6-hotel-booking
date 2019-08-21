@@ -122,12 +122,10 @@ zebra()
   opacity 0
   transform translateX(calc(-50% - 230px))
 img.bg
-  object-fit cover
-  object-position center
   position absolute
-  // top 50%
-  // left 50%
-  // transform translate(-50%, -50%)
+  top 50%
+  left 50%
+  transform translate(-50%, -50%)
 .wrap
   position relative
   z-index 1

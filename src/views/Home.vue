@@ -113,6 +113,7 @@ zebra()
   position relative
   overflow hidden
   box-sizing border-box
+  background-color #000
 .slide-enter-active, .fade-leave-active
   transition all 0.5s
 .slide-enter
@@ -211,22 +212,30 @@ img.bg
     box-sizing border-box
     padding 37px 112px 62px 34px
     height 404px
-    overflow hidden
+    &:before
+      z-index -1
+      content ''
+      position absolute
+      width 100%
+      height 100%
+      top 15px
+      left 15px
+      zebra()
     .side-bar-li
       position relative
       cursor pointer
       padding 9% 0
       &:after
         content ''
-        left -57px
+        left -34px
         height 1px
-        width 23px
+        width 0px
         background-color #000
         position absolute
         top 50%
         transition 0.3s linear
       &:hover:after
-        left -34px
+        width 23px
   .social-media
     display inline-block
     position absolute

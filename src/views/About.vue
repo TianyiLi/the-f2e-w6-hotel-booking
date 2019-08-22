@@ -4,6 +4,8 @@
       <div :key="i"
         v-for="(img, i) in roomImg">
         <img :src="img"
+          @mousemove="imgOnMouseOver($event)"
+          @mouseleave="imgOnMouseLeave($event)"
           alt="">
       </div>
     </div>
@@ -12,16 +14,22 @@
       <div class="left-block">
         <h1>{{name}}</h1>
         <div class="info">
-          <div class="li">房客人數限制：1~1人</div>
-          <div class="li">床型：單人床</div>
-          <div class="li">衛浴數量：1間</div>
-          <div class="li">房間大小：18平方公尺</div>
+          <div class="li">房客人數限制：{{info.GuestMin + ' ~ ' + info.GuestMax}}人</div>
+          <div class="li">床型：{{bed}}</div>
+          <div class="li">衛浴數量：{{info['Private-Bath']}}間</div>
+          <div class="li">房間大小：{{info.Footage}}平方公尺</div>
         </div>
-        <div class="detail"></div>
+        <div class="detail">{{detail}}</div>
         <div class="seperate">
-          <span></span>
-          <span></span>
-          <span></span>
+          <i class="material-icons">
+            remove
+          </i>
+          <i class="material-icons">
+            remove
+          </i>
+          <i class="material-icons">
+            remove
+          </i>
         </div>
         <span class="check-in">
           <span class="label">Check In</span>
@@ -51,9 +59,9 @@
         </div>
       </div>
       <div class="middle-block">
-        <div class="normal-day-price">NT.1380</div>
+        <div class="normal-day-price">NT.{{normalDayPrice}}</div>
         <div class="normal-day">平日(一~四)</div>
-        <div class="holiday-price">NT.1500</div>
+        <div class="holiday-price">NT.{{holidayPrice}}</div>
         <div class="holiday">假日(五~日)</div>
       </div>
       <div class="right-block">
@@ -137,12 +145,20 @@ export default class About extends Vue {
     return this.roomDetail[0].checkInAndOut.checkOut
   }
 
+  get normalDayPrice () {
+    if (this.isLoading) return ''
+    return this.roomDetail[0].normalDayPrice
+  }
+  get holidayPrice () {
+    if (this.isLoading) return ''
+    return this.roomDetail[0].holidayPrice
+  }
+
   get amenities () {
     if (this.isLoading) return []
     return Object.entries(this.roomDetail[0].amenities).map(([key, value]) => {
       let k = key === 'Wi-Fi' ? 'wifi' : key.replace('-', '').replace(/^(.)/, x => x[0].toLowerCase())
       if (k === 'smokeFree') value = !value
-      console.log(value)
       return {
         key: k,
         value,
@@ -168,6 +184,15 @@ export default class About extends Vue {
       }
     }
   }
+  imgOnMouseOver (ev: { offsetX: number, offsetY: number, target: HTMLElement }) {
+    let dom: HTMLElement = ev.target
+    dom.classList.add('scale')
+    dom.setAttribute('style', `transform-origin: ${ev.offsetX}px ${ev.offsetY}px`)
+  }
+  imgOnMouseLeave (ev: {target: HTMLElement}) {
+    ev.target.classList.remove('scale')
+    ev.target.setAttribute('style', '')
+  }
 }
 </script>
 <style lang="stylus" scoped>
@@ -189,6 +214,10 @@ export default class About extends Vue {
       object-position center
       width 100%
       height auto
+      transition .5s
+      &.scale
+        transition 0s
+        transform scale(1.5)
     div:nth-child(1)
       grid-row 1 / 3
       grid-column 1 / 3
@@ -221,6 +250,10 @@ export default class About extends Vue {
     font-size 14px
     line-height 31px
     letter-spacing 1.5px
+  .detail
+    font-size 12px
+    text-align justify
+    line-height 20px
   .check-in, .check-out
     display inline-flex
     flex-direction column
@@ -231,6 +264,10 @@ export default class About extends Vue {
       font-size 14px
     .time
       font-size 21px
+  .seperate
+    margin 30px 0
+    i
+      transform rotate(45deg)
   .check-in
     margin-right 96px
   .amenities

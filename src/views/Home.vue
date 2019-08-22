@@ -114,7 +114,7 @@ zebra()
   overflow hidden
   box-sizing border-box
   background-color #000
-.slide-enter-active, .fade-leave-active
+.slide-enter-active, .slide-leave-active
   transition all 0.5s
 .slide-enter
   opacity 0

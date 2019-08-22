@@ -6,6 +6,7 @@
         <img :src="img"
           @mousemove="imgOnMouseOver($event)"
           @mouseleave="imgOnMouseLeave($event)"
+          @click.stop="imgOnClick(i)"
           alt="">
       </div>
     </div>
@@ -66,18 +67,25 @@
       </div>
       <div class="right-block">
         <DatePicker></DatePicker>
-        <div class="order">預約時段</div>
+        <div class="order" @click="bookingDialogIsShow = true">預約時段</div>
       </div>
     </div>
+    <BookingDialog v-model="bookingDialogIsShow"></BookingDialog>
+    <img-viewer v-model="imgViewerIsShow"
+      :img="roomImg"
+      :name="name"
+      :imgIndex="imgViewerIndex"></img-viewer>
   </div>
 </template>
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator'
 import { RoomItemDetail, BookingDetail } from '../api/hex-interface'
 import { getRoomDetail } from '../api/hex'
+import ImgViewer from '@/components/ImgView.vue'
 /* eslint-disable-next-line */
 import Logo from '@/components/svg/LogoBlock.vue'
 import DatePicker from '@/components/DatePickers.vue'
+import BookingDialog from '@/components/BookingDialog.vue'
 const amenitiesImg = require.context('@/assets/amenities')
 const amenitiesDict = new Map([
   ['airConditioner', '空調'],
@@ -97,14 +105,19 @@ const amenitiesDict = new Map([
 @Component({
   components: {
     DatePicker,
-    Logo
+    Logo,
+    ImgViewer,
+    BookingDialog
   }
 })
 export default class About extends Vue {
   @Prop() id!: string
+  private bookingDialogIsShow = false
   private isLoading = true
   private roomDetail: RoomItemDetail[] = []
   private bookingDetail: BookingDetail[] = []
+  private imgViewerIsShow = false
+  private imgViewerIndex = 0
   private hasError = false
 
   get roomImg () {
@@ -189,9 +202,13 @@ export default class About extends Vue {
     dom.classList.add('scale')
     dom.setAttribute('style', `transform-origin: ${ev.offsetX}px ${ev.offsetY}px`)
   }
-  imgOnMouseLeave (ev: {target: HTMLElement}) {
+  imgOnMouseLeave (ev: { target: HTMLElement }) {
     ev.target.classList.remove('scale')
     ev.target.setAttribute('style', '')
+  }
+  imgOnClick (imgIndex: number) {
+    this.imgViewerIsShow = true
+    this.imgViewerIndex = imgIndex
   }
 }
 </script>
@@ -214,7 +231,8 @@ export default class About extends Vue {
       object-position center
       width 100%
       height auto
-      transition .5s
+      transition 0.5s
+      cursor pointer
       &.scale
         transition 0s
         transform scale(1.5)

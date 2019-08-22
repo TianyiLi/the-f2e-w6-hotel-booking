@@ -2,13 +2,15 @@
   <div class="date-wrapper">
     <div class="date-picker">
       <div class="nav">
-        <i class="material-icons" @click="backwardOnClick">
+        <i class="material-icons"
+          @click="backwardOnClick">
           chevron_left
         </i>
         <span class="year-and-month">
           {{yearIndex + ' / ' + monthIndex}}
         </span>
-        <i class="material-icons" @click="forwardOnClick">
+        <i class="material-icons"
+          @click="forwardOnClick">
           chevron_right
         </i>
       </div>
@@ -34,7 +36,7 @@
               :disabled="col.disabled"
               :is-before="col.isBefore"
               :class="selected.has(col.value) ? 'active' : ''"
-              @click.prevent="selected.add(col)"
+              @click.prevent="dateOnClick(col)"
               :key="j">
               {{col.display}}
             </td>
@@ -54,7 +56,8 @@ export default class DatePicker extends Vue {
   @Prop({
     default () { return [] }
   }) disabled!: string[]
-  private selected: Set<string> = new Set()
+
+  @Prop({ default () { return new Set() } }) selected!: Set<string>
   private stands = dayjs()
   private toDay = dayjs()
   get monthIndex () {
@@ -90,14 +93,14 @@ export default class DatePicker extends Vue {
       this.stands = this.stands.subtract(1, 'month')
     }
   }
-  dateOnClick (col: {value: string, display: string, week: number, isBefore: boolean, disabled: boolean}) {
+  dateOnClick (col: { value: string, display: string, week: number, isBefore: boolean, disabled: boolean }) {
     if (col.isBefore || col.disabled) return false
-    if (this.selected.has(col.value)) {
-      this.selected.delete(col.value)
+    console.log(col.value)
+    if (!this.selected.has(col.value)) {
+      this.$emit('add', col.value)
     } else {
-      this.selected.add(col.value)
+      this.$emit('remove', col.value)
     }
-    this.$emit('change', this.selected)
   }
 }
 </script>
@@ -109,7 +112,7 @@ i
   vertical-align middle
   cursor pointer
   user-select none
-  transition all .6s
+  transition all 0.6s
   &:active
     background-color rgba(black, 0.3)
 .date-wrapper

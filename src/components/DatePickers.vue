@@ -1,5 +1,5 @@
 <template>
-  <div class="date-wrapper">
+  <div class="date-wrapper" @click.stop>
     <div class="date-picker">
       <div class="nav">
         <i class="material-icons"
@@ -28,7 +28,7 @@
         </thead>
         <tbody>
           <tr class="row"
-            v-for="(row, i) in currentCalender"
+            v-for="(row, i) in getCurrentCalender()"
             :key="i">
             <td class="col"
               v-for="(col, j) in row"
@@ -55,7 +55,7 @@ import { chunk } from 'lodash'
 export default class DatePicker extends Vue {
   @Prop({
     default () { return [] }
-  }) disabled!: string[]
+  }) disabledDate!: string[]
 
   @Prop({ default () { return new Set() } }) selected!: Set<string>
   private stands = dayjs()
@@ -66,7 +66,7 @@ export default class DatePicker extends Vue {
   get yearIndex () {
     return this.stands.get('y')
   }
-  get currentCalender () {
+  getCurrentCalender () {
     let start = this.stands.startOf('month')
     let end = this.stands.endOf('month')
     let range = Array.from({ length: end.get('date') - start.get('date') + 1 }).map((_, i) => {
@@ -76,7 +76,7 @@ export default class DatePicker extends Vue {
         display: '' + d.get('date'),
         week: d.get('day'),
         isBefore: d.isBefore(this.toDay),
-        disabled: !!~this.disabled.indexOf(d.format('YYYY-MM-DD'))
+        disabled: !!~this.disabledDate.indexOf(d.format('YYYY-MM-DD'))
       }
     })
     let padding = range[0].week === 0 ? 0 : range[0].week

@@ -1,18 +1,23 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
+import { RoomItemDetail, BookingDetail } from './api/hex-interface'
 
 Vue.use(Vuex)
 
 export default new Vuex.Store({
   state: {
-    selected: []
+    roomDetail: {},
+    bookingDetail: [{}]
   },
   mutations: {
 
   },
   actions: {
-    setSelected ({ state }, value) {
-      state.selected = value
+    setRoomDetail ({ state }, roomDetail: RoomItemDetail) {
+      state.roomDetail = roomDetail
+    },
+    setBookingDetail ({ state }, bookingDetail: BookingDetail[]) {
+      state.bookingDetail = bookingDetail
     }
   }
 })

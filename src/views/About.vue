@@ -1,84 +1,104 @@
 <template>
-  <div class="about">
-    <div class="img-banner">
-      <div :key="i"
-        v-for="(img, i) in roomImg">
-        <img :src="img"
-          @mousemove="imgOnMouseOver($event)"
-          @mouseleave="imgOnMouseLeave($event)"
-          @click.stop="imgOnClick(i)"
-          alt="">
-      </div>
+  <transition name="fade" mode="out-in">
+    <div class="container"
+      id="loading-ctn"
+      v-if="isLoading">
+      <svg viewBox="0 0 32 32"
+        width="32"
+        height="32">
+        <circle id="spinner"
+          cx="16"
+          cy="16"
+          r="14"
+          fill="none"></circle>
+      </svg>
     </div>
-    <Logo class="logo"></Logo>
-    <div class="context">
-      <div class="left-block">
-        <h1>{{name}}</h1>
-        <div class="info">
-          <div class="li">房客人數限制：{{info.GuestMin + ' ~ ' + info.GuestMax}}人</div>
-          <div class="li">床型：{{bed}}</div>
-          <div class="li">衛浴數量：{{info['Private-Bath']}}間</div>
-          <div class="li">房間大小：{{info.Footage}}平方公尺</div>
+    <div class="about"
+      v-else>
+      <div class="img-banner">
+        <div :key="i"
+          v-for="(img, i) in roomImg">
+          <img :src="img"
+            @mousemove="imgOnMouseOver($event)"
+            @mouseleave="imgOnMouseLeave($event)"
+            @click.stop="imgOnClick(i)"
+            alt="">
         </div>
-        <div class="detail">{{detail}}</div>
-        <div class="seperate">
-          <i class="material-icons">
-            remove
-          </i>
-          <i class="material-icons">
-            remove
-          </i>
-          <i class="material-icons">
-            remove
-          </i>
-        </div>
-        <span class="check-in">
-          <span class="label">Check In</span>
-          <span class="time">
-            {{checkInTime[0]}}
+      </div>
+      <Logo class="logo"></Logo>
+      <div class="context">
+        <div class="left-block">
+          <h1>{{name}}</h1>
+          <div class="info">
+            <div class="li">房客人數限制：{{info.GuestMin + ' ~ ' + info.GuestMax}}人</div>
+            <div class="li">床型：{{bed}}</div>
+            <div class="li">衛浴數量：{{info['Private-Bath']}}間</div>
+            <div class="li">房間大小：{{info.Footage}}平方公尺</div>
+          </div>
+          <div class="detail">{{detail}}</div>
+          <div class="seperate">
             <i class="material-icons">
               remove
             </i>
-            {{checkInTime[1]}}
+            <i class="material-icons">
+              remove
+            </i>
+            <i class="material-icons">
+              remove
+            </i>
+          </div>
+          <span class="check-in">
+            <span class="label">Check In</span>
+            <span class="time">
+              {{checkInTime[0]}}
+              <i class="material-icons">
+                remove
+              </i>
+              {{checkInTime[1]}}
+            </span>
           </span>
-        </span>
-        <span class="check-out">
-          <span class="label">Check Out</span>
-          <span class="time">
-            {{checkOutTime}}
+          <span class="check-out">
+            <span class="label">Check Out</span>
+            <span class="time">
+              {{checkOutTime}}
+            </span>
           </span>
-        </span>
-        <div class="amenities">
-          <div class="amenity"
-            v-for="(ele, i) in amenities"
-            :key="i"
-            :enabled="ele.value">
-            <img :src="ele.img"
-              alt="">
-            <span class="tag">{{ele.tag}}</span>
+          <div class="amenities">
+            <div class="amenity"
+              v-for="(ele, i) in amenities"
+              :key="i"
+              :enabled="ele.value">
+              <img :src="ele.img"
+                alt="">
+              <span class="tag">{{ele.tag}}</span>
+            </div>
           </div>
         </div>
+        <div class="middle-block">
+          <div class="normal-day-price">NT.{{normalDayPrice}}</div>
+          <div class="normal-day">平日(一~四)</div>
+          <div class="holiday-price">NT.{{holidayPrice}}</div>
+          <div class="holiday">假日(五~日)</div>
+        </div>
+        <div class="right-block">
+          <DatePicker :disabledDate="disabledDate"></DatePicker>
+          <div class="order"
+            @click="bookingDialogIsShow = true">預約時段</div>
+        </div>
       </div>
-      <div class="middle-block">
-        <div class="normal-day-price">NT.{{normalDayPrice}}</div>
-        <div class="normal-day">平日(一~四)</div>
-        <div class="holiday-price">NT.{{holidayPrice}}</div>
-        <div class="holiday">假日(五~日)</div>
-      </div>
-      <div class="right-block">
-        <DatePicker></DatePicker>
-        <div class="order" @click="bookingDialogIsShow = true">預約時段</div>
-      </div>
+      <BookingDialog :disabled="disabledDate"
+        @close="bookingDialogIsShow = false"
+        v-if="bookingDialogIsShow"></BookingDialog>
+      <img-viewer v-model="imgViewerIsShow"
+        :img="roomImg"
+        :name="name"
+        :imgIndex="imgViewerIndex"></img-viewer>
     </div>
-    <BookingDialog v-model="bookingDialogIsShow"></BookingDialog>
-    <img-viewer v-model="imgViewerIsShow"
-      :img="roomImg"
-      :name="name"
-      :imgIndex="imgViewerIndex"></img-viewer>
-  </div>
+  </transition>
 </template>
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator'
+import { Action, State } from 'vuex-class'
 import { RoomItemDetail, BookingDetail } from '../api/hex-interface'
 import { getRoomDetail } from '../api/hex'
 import ImgViewer from '@/components/ImgView.vue'
@@ -112,10 +132,12 @@ const amenitiesDict = new Map([
 })
 export default class About extends Vue {
   @Prop() id!: string
+  @Action('setRoomDetail') setRoomDetail!: (roomDetail: RoomItemDetail) => void
+  @Action('setBookingDetail') setBookingDetail!: (bookingDetail: BookingDetail[]) => void
   private bookingDialogIsShow = false
   private isLoading = true
-  private roomDetail: RoomItemDetail[] = []
-  private bookingDetail: BookingDetail[] = []
+  @State('roomDetail') roomDetail!: RoomItemDetail
+  @State('bookingDetail') bookingDetail!: BookingDetail[]
   private imgViewerIsShow = false
   private imgViewerIndex = 0
   private hasError = false
@@ -123,53 +145,65 @@ export default class About extends Vue {
   get roomImg () {
     let result: string[] = []
     if (this.isLoading) return result
-    result = this.roomDetail[0].imageUrl
+    result = this.roomDetail.imageUrl
     return result
   }
 
   get name () {
     if (this.isLoading) return ''
-    return this.roomDetail[0].name
+    return this.roomDetail.name
   }
 
   get info () {
-    if (this.isLoading) return {}
-    return this.roomDetail[0].descriptionShort
+    if (this.isLoading) {
+      return {
+        GuestMin: '',
+        GuestMax: '',
+        Bed: '',
+        'Private-Bath': '',
+        Footage: ''
+      }
+    }
+    return this.roomDetail.descriptionShort
   }
 
   get bed () {
     if (this.isLoading) return ''
-    return this.roomDetail[0].descriptionShort.Bed.join(' ,')
+    return this.roomDetail.descriptionShort.Bed.join(' ,')
   }
 
   get detail () {
     if (this.isLoading) return ''
-    return this.roomDetail[0].description
+    return this.roomDetail.description
   }
 
   get checkInTime () {
     if (this.isLoading) return ['', '']
-    let { checkInEarly, checkInLate } = this.roomDetail[0].checkInAndOut
+    let { checkInEarly, checkInLate } = this.roomDetail.checkInAndOut
     return [checkInEarly, checkInLate]
   }
 
   get checkOutTime () {
     if (this.isLoading) return ''
-    return this.roomDetail[0].checkInAndOut.checkOut
+    return this.roomDetail.checkInAndOut.checkOut
   }
 
   get normalDayPrice () {
     if (this.isLoading) return ''
-    return this.roomDetail[0].normalDayPrice
+    return this.roomDetail.normalDayPrice
   }
   get holidayPrice () {
     if (this.isLoading) return ''
-    return this.roomDetail[0].holidayPrice
+    return this.roomDetail.holidayPrice
   }
 
-  get amenities () {
+  get disabledDate () {
     if (this.isLoading) return []
-    return Object.entries(this.roomDetail[0].amenities).map(([key, value]) => {
+    return this.bookingDetail.map(ele => ele.date)
+  }
+
+  amenitiesFormat (amenities: {}) {
+    return Object.entries(amenities).map(([key, value]) => {
       let k = key === 'Wi-Fi' ? 'wifi' : key.replace('-', '').replace(/^(.)/, x => x[0].toLowerCase())
       if (k === 'smokeFree') value = !value
       return {
@@ -181,6 +215,26 @@ export default class About extends Vue {
     })
   }
 
+  get amenities () {
+    if (this.isLoading) {
+      return this.amenitiesFormat({
+        'Wi-Fi': false,
+        'Breakfast': false,
+        'Mini-Bar': false,
+        'Room-Service': false,
+        'Television': false,
+        'Air-Conditioner': false,
+        'Refrigerator': false,
+        'Sofa': false,
+        'Great-View': false,
+        'Smoke-Free': false,
+        'Child-Friendly': false,
+        'Pet-Friendly': false
+      })
+    }
+    return this.amenitiesFormat(this.roomDetail.amenities)
+  }
+
   async mounted () {
     let data = await getRoomDetail(this.id)
     if (data instanceof Error) {
@@ -188,8 +242,8 @@ export default class About extends Vue {
       this.hasError = true
     } else {
       if (data.success) {
-        this.roomDetail = data.room
-        this.bookingDetail = data.booking
+        this.setRoomDetail(data.room[0])
+        this.setBookingDetail(data.booking)
         this.isLoading = false
       } else {
         this.hasError = true
@@ -215,6 +269,11 @@ export default class About extends Vue {
 <style lang="stylus" scoped>
 .about
   font-family 'Noto Sans TC'
+  .context
+    margin 0 auto
+    max-width 1200px
+    @media (max-width 768px)
+      width 100%
   .img-banner
     height 596px
     width 100%
@@ -347,4 +406,38 @@ export default class About extends Vue {
         margin-top 29px
         &:before
           top 4px
+.fade-enter-active, .fade-leave-active
+  transition opacity .5s
+.fade-enter, .fade-leave-to
+  opacity 0
+#spinner
+  box-sizing border-box
+  stroke #673AB7
+  stroke-width 3px
+  transform-origin 50%
+  -webkit-animation line 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite, rotate 1.6s linear infinite
+@keyframes rotate
+  from
+    transform rotate(0)
+  to
+    transform rotate(450deg)
+@keyframes line
+  0%
+    stroke-dasharray 2, 85.964
+    transform rotate(0)
+  50%
+    stroke-dasharray 65.973, 21.9911
+    stroke-dashoffset 0
+  100%
+    stroke-dasharray 2, 85.964
+    stroke-dashoffset -65.973
+    transform rotate(90deg)
+#loading-ctn
+  position fixed
+  display flex
+  justify-content center
+  align-items center
+  width 100%
+  height 100%
+  background-color #fff
 </style>

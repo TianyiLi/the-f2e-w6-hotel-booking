@@ -17,7 +17,7 @@ function getRoomDetail (id: string): Promise<{ success: boolean, room: RoomItemD
 }
 
 function postBookingRoom (detail: BookingPost, id: string): Promise<{ success: boolean, room: RoomItemDetail[], booking: Boolean[] } | Error> {
-  return axios.post(api + '/room/' + id, { headers, responseType: 'json' }).then(res => res.data).catch(err => Error(err))
+  return axios.post(api + '/room/' + id, detail, { headers, responseType: 'json' }).then(res => res.data).catch(err => Error(err))
 }
 
 function deleteBooking (): Promise<{ success: boolean } | Error> {

@@ -1,9 +1,6 @@
 <template>
-  <div class="light-box-bg"
-    v-if="value"
-    @click="$emit('input', false)">
-    <div class="light-box"
-      @click.stop="datePickerIsShow = false">
+  <div class="light-box-bg" @click.stop="datePickerIsShow = false">
+    <div class="light-box">
       <div class="title">{{title}}</div>
       <div class="seperate">
         <i class="material-icons">
@@ -17,50 +14,79 @@
         </i>
       </div>
       <div class="wrap"
-        v-if="state === flag.Order || state === flag.Ordering">
+        v-if="state === flag.Order">
         <div class="form">
           <span class="label">姓名</span>
-          <input type="text">
+          <!-- <input type="text"> -->
+          <tInput :validate="nameValidate"
+            v-model="name"
+            required
+            :error="nameHasError"
+            type="string"></tInput>
           <span class="label">電話</span>
-          <input type="tel">
+          <tInput :validate="phoneValidate"
+            v-model="phone"
+            required
+            :error="phoneHasError"
+            type="tel"></tInput>
           <span class="label">預約起迄</span>
           <span class="input-group">
-            <input type="text"
+            <tInput type="text"
               autocomplete="new"
               autofill=false
               v-model="from"
-              @click.stop="fromOnFocus"> ~
-            <input type="text"
+              required
+              :error="dateHasError"
+              :validate="dateValidate"
+              @click.native.stop="fromOnFocus"/> ~
+            <tInput type="text"
               autocomplete="new"
               v-model="to"
               autofill=fasle
-              @click.stop="toOnFocus">
+              required
+              :error="dateHasError"
+              :validate="dateValidate"
+              @click.native.stop="toOnFocus"/>
           </span>
-          <DatePicker v-if="datePickerIsShow"
-            @add="onAdd"
-            @remove="onRemove"
-            :selected="selected"
-            class="in-form"></DatePicker>
         </div>
         <div class="calculate">
           <div class="row">
-            <span>平日時段</span><span>1夜</span>
+            <span>平日時段</span><span>{{getNoramlDay()}}夜</span>
           </div>
           <div class="row">
-            <span>假日時段</span><span>1夜</span>
+            <span>假日時段</span><span>{{getHoliday()}}夜</span>
           </div>
         </div>
         <div class="result">
           <i class="material-icons">
             drag_handle
           </i>
-          NT.2850
+          NT.{{getCountingPrice()}}
         </div>
         <div class="btn-row">
           <button class="cancel"
             @click.stop="onCancel">取消</button>
           <button class="confirm"
-            @click.stop="onConfirm">確定預約</button>
+            @click.stop="onConfirm" :disabled="confirmIsDisabled">確定預約</button>
+        </div>
+        <DatePicker v-if="datePickerIsShow"
+            :disabledDate="disabledDate"
+            @add="onAdd"
+            @remove="onRemove"
+            :selected="selected"
+            class="in-form"></DatePicker>
+      </div>
+      <div class="wrap" v-if="state === flag.Ordering">
+        <div class="ordering">
+          <svg viewBox="0 0 32 32"
+            width="32"
+            height="32">
+            <circle id="spinner"
+              cx="16"
+              cy="16"
+              r="14"
+              fill="none"></circle>
+          </svg>
         </div>
       </div>
       <div class="wrap"
@@ -79,7 +105,7 @@
         </div>
         <br>
         <button class="back"
-          @click="$emit('input', false)">返回</button>
+          @click="state = flag.Order">返回</button>
       </div>
     </div>
   </div>
@@ -87,8 +113,11 @@
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator'
 import DatePicker from './DatePickers.vue'
-import { } from 'vuex'
+import { State } from 'vuex-class'
 import dayjs, { Dayjs } from 'dayjs'
+import { BookingDetail, RoomItemDetail } from '../api/hex-interface'
+import tInput from './Input'
+import { postBookingRoom } from '../api/hex'
 
 enum flag {
   Order,
@@ -99,28 +128,57 @@ enum flag {
 
 @Component({
   components: {
-    DatePicker
+    DatePicker,
+    tInput
   }
 })
 export default class BookingDialog extends Vue {
-  @Prop() value!: Boolean
   private flag = flag
   private state = flag.Order
   private datePickerIsShow = false
   private datePickerTarget = 'from'
   private selected: Set<string> = new Set()
+  private name = ''
+  private nameHasError = false
+  private phone = ''
+  private phoneHasError = false
   private from = ''
   private to = ''
+
+  public dateHasError = false
+
+  @State('bookingDetail') bookingDetail!: BookingDetail[]
+  @State('roomDetail') roomDetail!: RoomItemDetail
+
   get title () {
     switch (this.state) {
       case flag.Order:
-      case flag.Ordering:
         return '預約時段'
+      case flag.Ordering:
+        return '預約中'
       case flag.Failed:
         return '預約失敗'
       case flag.Success:
         return '預約成功'
     }
+  }
+  getHoliday () {
+    return [...this.selected].reduce((prev, curr) => (prev += dayjs(curr).get('day') % 6 === 0 ? 1 : 0), 0)
+  }
+  getNoramlDay () {
+    return [...this.selected].reduce((prev, curr) => (prev += dayjs(curr).day() % 6 === 0 ? 0 : 1), 0)
+  }
+
+  getCountingPrice () {
+    return this.getHoliday() * this.roomDetail.holidayPrice + this.getNoramlDay() * this.roomDetail.normalDayPrice
+  }
+
+  get disabledDate () {
+    return this.bookingDetail.map(ele => ele.date)
+  }
+
+  get confirmIsDisabled () {
+    return (this.nameHasError || this.phoneHasError || this.dateHasError)
   }
   fromOnFocus () {
     this.datePickerTarget = 'from'
@@ -135,7 +193,7 @@ export default class BookingDialog extends Vue {
     if (!this.selected.has(this.to)) this.selected.add(this.to)
     let from = dayjs(this.from)
     let to = dayjs(this.to)
-    let tmp:Dayjs = from.clone()
+    let tmp: Dayjs = from.clone()
     while (!tmp.add(1, 'day').isSame(to)) {
       this.selected.add(tmp.add(1, 'day').format('YYYY-MM-DD'))
       tmp = tmp.add(1, 'day')
@@ -145,6 +203,7 @@ export default class BookingDialog extends Vue {
     if (this.datePickerTarget === 'from') {
       if (!this.to) {
         this.from = value
+        this.to = value
       } else if (this.to && dayjs(this.to).isAfter(value)) {
         this.from = value
         this.fillSelect()
@@ -162,6 +221,9 @@ export default class BookingDialog extends Vue {
         alert('Input incorrect')
       }
     }
+    this.datePickerIsShow = false
+    this.dateValidate()
+    this.$forceUpdate()
   }
   onRemove (value: string) {
     if (this.datePickerTarget === 'from') {
@@ -174,12 +236,56 @@ export default class BookingDialog extends Vue {
       this.selected.clear()
       this.from !== '' && this.selected.add(this.from)
     }
+    this.datePickerIsShow = false
+    this.$forceUpdate()
   }
-  onCancel () {
-    this.state = flag.Failed
+
+  nameValidate (value: string) {
+    this.nameHasError = value === ''
+  }
+
+  phoneValidate (value: string) {
+    this.phoneHasError = value === ''
+  }
+
+  dateValidate () {
+    this.dateHasError = this.from === '' || this.to === ''
+  }
+
+  validate () {
+    this.nameValidate(this.name)
+    this.phoneValidate(this.phone)
+    this.dateValidate()
+    if (!(this.nameHasError || this.phoneHasError || this.dateHasError)) {
+      return true
+    }
+    return false
+  }
+
+  async runSubmit () {
+    this.state = flag.Ordering
+    let data = await postBookingRoom({
+      name: this.name,
+      tel: this.phone,
+      date: [...this.selected]
+    }, this.roomDetail.id)
+    if (data instanceof Error) {
+      console.error(data.message)
+      this.state = flag.Failed
+    } else if (!data.success) {
+      this.state = flag.Failed
+    } else {
+      this.state = flag.Success
+    }
+  }
+
+  async onCancel () {
+    this.$emit('close')
   }
   onConfirm () {
-    this.state = flag.Success
+    if (this.validate()) {
+      this.runSubmit()
+    }
   }
 }
 </script>
@@ -233,6 +339,7 @@ button
         width 95px
         font-size 14px
         margin-bottom 17px
+        text-align left
       &>input
         margin-bottom 17px
         width 243px
@@ -278,11 +385,18 @@ button
       &.confirm
         color white
         background-color #484848
+        &[disabled="disabled"]
+          opacity 0.7
+          cursor not-allowed
       &.cancel
         color #6d7278
         background-color #d8d8d8
+    input.error
+      border-color red
 .wrap
   text-align center
+  .ordering
+    margin 4.1rem 0 6rem
   img.success
     width 60px
     margin 10px auto 25px
@@ -299,4 +413,26 @@ button
     margin-left 42px
     margin-top 24px
     margin-bottom 31px
+#spinner
+  box-sizing border-box
+  stroke #673AB7
+  stroke-width 3px
+  transform-origin 50%
+  -webkit-animation line 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite, rotate 1.6s linear infinite
+@keyframes rotate
+  from
+    transform rotate(0)
+  to
+    transform rotate(450deg)
+@keyframes line
+  0%
+    stroke-dasharray 2, 85.964
+    transform rotate(0)
+  50%
+    stroke-dasharray 65.973, 21.9911
+    stroke-dashoffset 0
+  100%
+    stroke-dasharray 2, 85.964
+    stroke-dashoffset -65.973
+    transform rotate(90deg)
 </style>

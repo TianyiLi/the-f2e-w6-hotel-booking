@@ -57,21 +57,29 @@
           NT.2850
         </div>
         <div class="btn-row">
-          <button class="cancel" @click.stop="onCancel">取消</button>
-          <button class="confirm" @click.stop="onConfirm">確定預約</button>
+          <button class="cancel"
+            @click.stop="onCancel">取消</button>
+          <button class="confirm"
+            @click.stop="onConfirm">確定預約</button>
         </div>
       </div>
-      <div class="wrap" v-if="state === flag.Success">
-        <img class="success" src="../assets/amenities/tick-inside-circle.svg" alt="">
+      <div class="wrap"
+        v-if="state === flag.Success">
+        <img class="success"
+          src="../assets/amenities/tick-inside-circle.svg"
+          alt="">
         <br>
-        <button class="back" @click="$router.push('/')">回首頁</button>
+        <button class="back"
+          @click="$router.push('/')">回首頁</button>
       </div>
-      <div class="wrap" v-if="state === flag.Failed">
+      <div class="wrap"
+        v-if="state === flag.Failed">
         <div class="failed-text">
           預約時間已經被人預訂
         </div>
         <br>
-        <button class="back" @click="$emit('input', false)">返回</button>
+        <button class="back"
+          @click="$emit('input', false)">返回</button>
       </div>
     </div>
   </div>
@@ -80,6 +88,7 @@
 import { Component, Prop, Vue } from 'vue-property-decorator'
 import DatePicker from './DatePickers.vue'
 import { } from 'vuex'
+import dayjs, { Dayjs } from 'dayjs'
 
 enum flag {
   Order,
@@ -121,18 +130,49 @@ export default class BookingDialog extends Vue {
     this.datePickerTarget = 'to'
     this.datePickerIsShow = true
   }
+  fillSelect () {
+    if (!this.selected.has(this.from)) this.selected.add(this.from)
+    if (!this.selected.has(this.to)) this.selected.add(this.to)
+    let from = dayjs(this.from)
+    let to = dayjs(this.to)
+    let tmp:Dayjs = from.clone()
+    while (!tmp.add(1, 'day').isSame(to)) {
+      this.selected.add(tmp.add(1, 'day').format('YYYY-MM-DD'))
+      tmp = tmp.add(1, 'day')
+    }
+  }
   onAdd (value: string) {
     if (this.datePickerTarget === 'from') {
-      this.from = value
+      if (!this.to) {
+        this.from = value
+      } else if (this.to && dayjs(this.to).isAfter(value)) {
+        this.from = value
+        this.fillSelect()
+      } else {
+        alert('input incorrect')
+      }
+      this.selected.add(value)
     } else {
-      this.to = value
+      if (!this.from) {
+        this.to = value
+      } else if (this.from && dayjs(this.from).isBefore(value)) {
+        this.to = value
+        this.fillSelect()
+      } else {
+        alert('Input incorrect')
+      }
     }
   }
   onRemove (value: string) {
     if (this.datePickerTarget === 'from') {
-      this.from = value
+      this.from = ''
+      this.selected.clear()
+      this.to !== '' && this.selected.add(this.to)
     } else {
       this.to = value
+      this.selected.delete(value)
+      this.selected.clear()
+      this.from !== '' && this.selected.add(this.from)
     }
   }
   onCancel () {
